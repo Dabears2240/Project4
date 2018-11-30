@@ -20,7 +20,7 @@ void insert(Node* newNode) {
 		root->red = 0;
 		root->freed = 0;
 		return;
-	}
+	 }
 
 	// not root
 	Node* pptr = NULL;
@@ -60,6 +60,118 @@ void insert(Node* newNode) {
 
 	return;
 }
+
+void delete(Node* node) {
+	Node* removed = node;
+	Node* child;
+	int rmcase = 0;
+	// standard BST removal
+	// case 1: no children
+	if (node->left == NULL && node->right == NULL) {
+		if (node->parent->left == node)
+			node->parent->left == NULL;
+		else
+			node->parent->right == NULL;
+		rmcase = 1;
+	}
+	// case 2: one child
+	else if (node->left == NULL || node->right == NULL) {
+		// get child ptr
+		if (node->left == NULL)
+			child = node->right;
+		else
+			child = node->left;
+
+		// set parent's child to node's child
+		if (node->parent->left == node) {
+			node->parent->left = child;
+			child->parent = node->parent;
+		}
+		else {
+			node->parent->right = child;
+			child->parent = node->parent;
+		}
+		rmcase = 2;
+	}
+	// case 3: two children
+	else {
+		Node* leftmost = node->right;
+		while (leftmost->left != NULL) {
+			leftmost = leftmost->left;
+		}
+		// swap node and leftmost
+		// by swapping parents
+		Node* swp = node->parent;
+		node->parent = leftmost->parent;
+		leftmost->parent = swp;
+		if (leftmost->parent->left == node)
+			leftmost->parent->left = leftmost;
+		else
+			leftmost->parent->right = leftmost;
+		node->parent->left = node;
+		// then swapping children
+		leftmost->left = node->left;
+		leftmost->left->parent = leftmost;
+		node->left = NULL;
+		swp = node->right;
+		node->right = leftmost->right;
+		leftmost->right = swp;
+		if (node->right != NULL)
+			node->right->parent = node;
+		leftmost->right->parent = leftmost;
+		// recursive delete call
+		delete(node);
+		return;
+	}
+
+	// recoloring and rebalancing
+	// simple case: either node or child is red
+	int simple = 1;
+	if (rmcase == 1 && node->red) {
+		// do nothing
+	}
+	else if (rmcase == 2) {
+		if (node->red || child->red) {
+			child->red = 0;
+		}
+		else {
+			simple = 0;
+		}
+	}
+
+	if (simple)
+		return;
+
+	// complex case: both node and child are black
+	child->red = -1; // double black
+	Node* parent = child->parent;
+	Node* sib;
+	if (child->parent->left = child)
+		sib = parent->right;
+	else
+		sib = parent->left;
+	Node* lnephew = NULL;
+	Node* rnephew = NULL;
+	int nephcolor[2] = {0, 0};
+	if (sib->left != NULL) {
+		lnephew = sib->left;
+		nephcolor[0] = lnephew->red;
+	}
+	if (sib->right != NULL) {
+		rnephew = sib->right;
+		nephcolor[1] = rnephew->red;
+	}
+	// if sib is black and a neph is red
+	if (!sib->red && (nephcolor[0] || nephcolor[1])) {
+		// FOUR CASES (LEFT/RIGHT LEFT/RIGHT)
+		// LEFT LEFT (sib is a left child and its left child or both is red
+		if ((sib->parent->left == sib) && nephcolor[0] == 1) {
+
+
+
+
+}
+
 
 void rebalance(Node* node) {
 	if (node == root) {

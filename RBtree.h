@@ -11,4 +11,8 @@ typdef struct Node {
 
 const int TREE_SIZE = 1024;
 
+void insert(Node* node);
+void delete(Node* node);
+void rebalance(Node* node);
+
 #endif
