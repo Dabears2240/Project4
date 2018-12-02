@@ -17,11 +17,13 @@ typedef struct Node {
 
 Node* getRoot();
 Node* initNode(void* addr, size_t size);
+int isRed(Node* node);
 void insert(Node* node);
 void delete(Node* node);
 void rotateRight(Node* node);
 void rotateLeft(Node* node);
-void rebalance(Node* node);
+void rebalanceInsert(Node* node);
+void rebalanceDelete(Node* node);
 Node* find(void* addr);
 void printTree();
 void printTreeHelper(Node* node);

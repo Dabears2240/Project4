@@ -79,18 +79,12 @@ void insert(Node* newNode) {
 }
 
 void delete(Node* node) {
-	Node* removed = node;
-	Node* child;
-	int rmcase = 0;
-
-	// special cases
-
 	// standard BST removal
 	// case 1: no children
 	if (node->left == NULL && node->right == NULL) {
 		// root checking
 		if (node == root) {
-			root == NULL;
+			root = NULL;
 			return;
 		}
 
@@ -98,11 +92,18 @@ void delete(Node* node) {
 			node->parent->left = NULL;
 		else
 			node->parent->right = NULL;
-		rmcase = 1;
+		
+		// rebalance if a black leaf was removed
+		if (!isRed(node)) {
+			node->red = -1;
+			rebalanceDelete(node);
+		}
+		return;
 	}
 	// case 2: one child
 	else if (node->left == NULL || node->right == NULL) {
 		// get child ptr
+		Node* child;
 		if (node->left == NULL)
 			child = node->right;
 		else
@@ -125,7 +126,16 @@ void delete(Node* node) {
 			node->parent->right = child;
 			child->parent = node->parent;
 		}
-		rmcase = 2;
+		
+		// rebalance if neither node nor child are red
+		if (!isRed(node) && !isRed(child)) {
+			child->red = -1;
+			rebalanceDelete(child);
+		}
+		else {
+			child->red = 0;
+		}
+		return;
 	}
 	// case 3: two children
 	else {
@@ -136,7 +146,7 @@ void delete(Node* node) {
 		}
 		// swap node and leftmost
 		// by swapping parents
-		Node* swp = node->parent;
+		/*Node* swp = node->parent;
 		node->parent = leftmost->parent;
 		leftmost->parent = swp;
 		if (leftmost->parent != NULL) {
@@ -161,87 +171,117 @@ void delete(Node* node) {
 			leftmost->right = node;
 		if (node->right != NULL)
 			node->right->parent = node;
-		leftmost->right->parent = leftmost;
-		// color swap
-		int colorswap = leftmost->red;
-		leftmost->red = node->red;
-		node->red = colorswap;
-		// recursive delete call
-		delete(node);
-		return;
-	}
+		leftmost->right->parent = leftmost;*/
 
-	// recoloring and rebalancing
-	// simple case: either node or child is red
-	if (rmcase == 1 && node->red) {
+		// INSTEAD, WE CAN SWAP VALUES (not color)
+		// addr swap
+		void* addrswap = leftmost->addr;
+		leftmost->addr = node->addr;
+		node->addr = addrswap;
+		// size swap
+		size_t sizeswap = leftmost->size;
+		leftmost->size = node->size;
+		node->size = sizeswap;
+		// freed swap
+		int freedswap = leftmost->freed;
+		leftmost->freed = node->freed;
+		node->freed = freedswap;
+
+		// recursive delete call
+		delete(leftmost);
 		return;
 	}
-	else if (rmcase == 2) {
-		if (node->red || child->red) {
-			child->red = 0;
-			return;
-		}
-	}
-	
-	//recursive rebalance call
-	rebalanceDelete(node);
-	return;
 }
 
 // function for rebalancing and recoloring in the delete case
-// node is the node being deleted
+// node is the double black (child, or deleted node if NULL)
 void rebalanceDelete(Node* node) {
 	// complex case: both node and child are black
 	// we can assume node has a sib
-	Node* child;
-	if (node->left != NULL) 
-		child = node->left;
-	else {
-		child = node->right;
-	child->red = -1; // double black
+	
+	// get relations
 	Node* parent = node->parent;
-	Node* sib;
-	if (node->parent->left == node)
-		sib = parent->right;
-	else
-		sib = parent->left;
-	Node* lnephew = NULL;
-	Node* rnephew = NULL;
-	if (sib->left != NULL) {
-		lnephew = sib->left;
-	}
-	if (sib->right != NULL) {
-		rnephew = sib->right;
-	}
+	Node* sib = (node->parent->left == node) ? parent->right : parent->left;
+	Node* lnephew = sib->left;
+	Node* rnephew = sib->right;
+
 	// if sib is black and a neph is red
 	if (!sib->red && (isRed(lnephew) || isRed(rnephew))) {
 		// FOUR CASES
-		// LEFT LEFT (sib is a left child and its left child or both is red
+		// NO RECURSION: WE SOLVE THE DOUBLE BLACK HERE
+		// LEFT LEFT (sib is a left child and its left child or both is red)
 		if ((sib->parent->left == sib) && isRed(lnephew)) {
-			rotateLeft(sib);
+			rotateRight(sib);
 			// colors
-
+			lnephew->red = 0;
+			node->red = 0;
 		}
 		// LEFT RIGHT
 		else if ((sib->parent->left == sib) && isRed(rnephew)) {
+			// 1st rotation
+			rotateLeft(rnephew);
+			// colors
+			rnephew->red = 0;
+			sib->red = 1;
+			// 2nd rotation
+			rotateRight(rnephew);
+			// colors
+			sib->red = 0;
+			int swp = rnephew->red;
+			rnephew->red = parent->red;
+			parent->red = swp;
+			node->red = 0;
 		}
 		// RIGHT RIGHT
 		else if ((sib->parent->right == sib) && isRed(rnephew)) {
+			rotateLeft(sib);
+			// colors
+			rnephew->red = 0;
+			node->red = 0;
 		}
 		// RIGHT LEFT
 		else {
+			// 1st rotation
+			rotateRight(lnephew);
+			// colors
+			lnephew->red = 0;
+			sib->red = 1;
+			// 2nd rotation
+			rotateLeft(lnephew);
+			// colors
+			sib->red = 0;
+			int swp = lnephew->red;
+			lnephew->red = parent->red;
+			parent->red = swp;
+			node->red = 0;
 		}
 	}
 	// if sib is black and both nephs are black
 	else if (!sib->red) {
+		// THIS CASE IS RECURSIVE: DOUBLE BLACK CAN PROPOGATE
+		sib->red = 1;
+		parent->red--;
+		if (parent->red < 0) {
+			rebalanceDelete(parent);
+		}
 	}
 	// if sib is red
 	else {
 		// LEFT
 		if (sib->parent->left == sib) {
+			rotateRight(sib);
+			int swp = sib->red;
+			sib->red = parent->red;
+			parent->red = swp;
+			rebalanceDelete(node);
 		}
 		// RIGHT
 		else {
+			rotateLeft(sib);
+			int swp = sib->red;
+			sib->red = parent->red;
+			parent->red = swp;
+			rebalanceDelete(node);
 		}
 	}
 
@@ -302,6 +342,8 @@ void rotateLeft(Node* node) {
 	return;
 }
 
+// function returns the color
+// implicit NULL handling -- NULL node is black
 int isRed(Node* node) {
 	if (node == NULL)
 		return 0; // black
