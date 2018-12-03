@@ -80,6 +80,8 @@ void insert(Node* newNode) {
 
 // On an insertion to a RB tree, a rebalance is required
 // to maintain the balanced tree property.
+//
+// this is also called in rebalanceDelete for a few cases
 void rebalanceInsert(Node* node) {
         // root check
         if (node == root) {
@@ -89,7 +91,7 @@ void rebalanceInsert(Node* node) {
         if (node->parent == root) {
                 return;
         }
-        // black parent check
+        // black parent check (w/o double black)
         if (!isRed(node->parent)) {
                 return;
         }
@@ -104,10 +106,10 @@ void rebalanceInsert(Node* node) {
                 else if (gparent->right == parent)
                         uncle = gparent->left;
         }
+
 	// recursive rebalance
         // check uncle color
         if (isRed(uncle)) {
-                // uncle is red!
                 parent->red = 0;
                 uncle->red = 0;
                 gparent->red = 1;
@@ -280,12 +282,17 @@ void delete(Node* node) {
 void rebalanceDelete(Node* node) {
 	// complex case: both node and child are black
 	// we can assume node has a sib
-	
-	// get relations
+	if (node == root) {
+		node->red = 0;
+		return;
+	}
+
+	// get relations (child is what replaced node)
 	Node* parent = node->parent;
-	Node* sib = (node->parent->left == node) ? parent->right : parent->left;
-	Node* lnephew = sib->left;
-	Node* rnephew = sib->right;
+	Node* child = (node->left == NULL) ? node->right : node->left;
+	Node* sib = (parent->left == child) ? parent->right : parent->left;
+	Node* lnephew = (sib != NULL) ? sib->left : NULL;
+	Node* rnephew = (sib != NULL) ? sib->right : NULL;
 
 	// if sib is black and a neph is red
 	if (!sib->red && (isRed(lnephew) || isRed(rnephew))) {
@@ -293,59 +300,49 @@ void rebalanceDelete(Node* node) {
 		// NO RECURSION: WE SOLVE THE DOUBLE BLACK HERE
 		// LEFT LEFT (sib is a left child and its left child or both is red)
 		if ((sib->parent->left == sib) && isRed(lnephew)) {
-			rotateRight(sib);
+			printf("LL entered\n");
+			rotateRight(parent);
 			// colors
-			lnephew->red = 0;
-			node->red = 0;
+			doubleBlack(node, 0);
 		}
 		// LEFT RIGHT
 		else if ((sib->parent->left == sib) && isRed(rnephew)) {
+			printf("LR entered\n");
 			// 1st rotation
-			rotateLeft(rnephew);
+			rotateLeft(sib);
 			// colors
 			rnephew->red = 0;
 			sib->red = 1;
 			// 2nd rotation
-			rotateRight(rnephew);
+			rotateRight(parent);
 			// colors
-			sib->red = 0;
-			int swp = rnephew->red;
-			rnephew->red = parent->red;
-			parent->red = swp;
-			node->red = 0;
+			doubleBlack(node, 0);
 		}
 		// RIGHT RIGHT
 		else if ((sib->parent->right == sib) && isRed(rnephew)) {
-			rotateLeft(sib);
+			printf("RR entered\n");
+			rotateLeft(parent);
 			// colors
-			rnephew->red = 0;
-			node->red = 0;
+			doubleBlack(node, 0);
 		}
 		// RIGHT LEFT
 		else {
+			printf("RL entered\n");
 			// 1st rotation
-			rotateRight(lnephew);
+			rotateRight(sib);
 			// colors
 			lnephew->red = 0;
 			sib->red = 1;
 			// 2nd rotation
-			rotateLeft(lnephew);
+			rotateLeft(parent);
 			// colors
-			sib->red = 0;
-			int swp = lnephew->red;
-			lnephew->red = parent->red;
-			parent->red = swp;
-			node->red = 0;
+			doubleBlack(node, 0);
 		}
 	}
 	// if sib is black and both nephs are black
 	else if (!sib->red) {
 		// THIS CASE IS RECURSIVE: DOUBLE BLACK CAN PROPOGATE
-		sib->red = 1;
-		parent->red--;
-		if (parent->red < 0) {
-			rebalanceDelete(parent);
-		}
+		doubleBlack(node, 1);
 	}
 	// if sib is red
 	else {
@@ -368,6 +365,65 @@ void rebalanceDelete(Node* node) {
 	}
 
 }
+
+// solves a double black node
+// resolving a double black requires knowing whether you care
+// about the sibling or the uncle. Each has 2 cases, depending on the
+// parent, but you otherwise don't know anything about the tree unless you
+// pass it in. I may be mistaken though.
+void doubleBlack(Node* node, int casenum) {
+	// root check
+	if (node == root) {
+		node->red = 0;
+		return;
+	}
+	
+	Node* parent = node->parent;
+
+	// cares about the uncle
+	if (casenum == 0) {
+		// family
+		Node* gparent = parent->parent;
+		Node* uncle = (gparent->right != parent) ? gparent->right : gparent->left;
+
+		node->red = 0;
+                // case depends on parent
+                if (isRed(parent)) {
+                        parent->red = 0;
+                        uncle->red = 0;
+                        gparent->red = 1;
+                        // rebalance/recolor for gparent
+                        rebalanceInsert(gparent);
+                }
+                else {
+                        uncle->red = 0;
+                }
+                return;
+	}
+	// cares about the sibling
+	else if (casenum == 1) {
+		// family relations
+		Node* child = (node->left != NULL) ? node->left : node->right;
+		Node* sib = (parent->left != child) ? parent->left : parent->right;
+
+		// recolor and move up double black
+		node->red = 0;
+		sib->red = 1;
+		if (isRed(parent)) {
+			parent->red = 0;
+		}
+		else {
+			parent->red = -1;
+			// determine double-black case
+			rebalanceDelete(parent);
+		}
+		return;
+	}
+}
+	
+
+// called on a node to recolor recursively
+// compares it to it's uncle
 
 // called on the top node of the rotation, moving it
 // to the position of its right child
@@ -398,7 +454,7 @@ void rotateRight(Node* node) {
 }
 
 // called on the top node of the rotation, moving it
-// to the osition of its left child
+// to the position of its left child
 void rotateLeft(Node* node) {
 	Node* p = node->right;
 	Node* parent = node->parent;
@@ -433,6 +489,20 @@ int isRed(Node* node) {
 		return node->red;
 }
 
+// gets the level of the node (0 is root)
+// mostly for printing purposes
+int getLevel(Node* node) {
+	if (node == NULL)
+		return -1;
+	int count = 0;
+	Node* ptr = node;
+	while (ptr->parent != NULL) {
+		ptr = ptr->parent;
+		count++;
+	}
+	return count;
+}
+
 // function to find a node in a tree, from it's address
 // returns the node on success
 // returns NULL on failure
@@ -452,19 +522,33 @@ Node* find(void* addr) {
 	return NULL;
 }
 
+// prints the info of the node
+// 0xaddr (r/b lvl)
+void printNode(Node* node) {
+	if (node == NULL) {
+		printf("null node print\n");
+		return;
+	}
+	printf("%p (%c %i)\n", (node->addr), (node->red? 'r' : 'b'), getLevel(node));
+	return;
+}
+
 // recursive function to in-order print the tree
 void printTree() {
-	printTreeHelper(root);
+	if (root == NULL)
+		printf("Empty tree\n");
+	else
+		printTreeHelper(root);
 	return;
 }
 // helper for recursive print
 void printTreeHelper(Node* node) {
+	// move left
 	if (node->left != NULL)
 		printTreeHelper(node->left);
-	printf("%p (%c)", node->addr, (node->red? 'r' : 'b'));
-	if (node == root)
-		printf(" -root- ");
-	printf("\n");
+	// printing information
+	printNode(node);
+	// move right
 	if (node->right != NULL)
 		printTreeHelper(node->right);
 	return;

@@ -38,14 +38,14 @@ void simpleDelete() {
 	return;
 }
 
-void deleteSibB() {
+void deleteNephR() {
 	// change target for different cases
-	// case LL:	18, 15
-	// case RR:	 1,  5
-	// case LR:	30, 25
-	// case RL:	60, 70
-	int target1 = 0;
-	int target2 = 0;
+	// case LL:	45, 40
+	// case RR:	15, 20
+	// case LR:	75, 80
+	// case RL:	65, 60
+	int target1 = 75;
+	int target2 = 80;
 	
 	int arr[100];
 	Node* n[100];
@@ -63,12 +63,55 @@ void deleteSibB() {
 	insert(n[65]);
 	insert(n[75]);
 	printTree();
+	printf("~~deleting %i, %i~~\n", target1, target2);
+	delete(n[target1]);
+	delete(n[target2]);
+	printTree();
+	return;
+}
+
+void deleteNephB() {
+        int arr[100];
+	Node* n[100];
+	for (int i = 0; i < 100; i++)
+		n[i] = initNode(arr+i,1);
+	insert(n[10]);
+	insert(n[3]);
+	insert(n[15]);
+	insert(n[1]);
+	delete(n[1]);
+	printTree(); // all black at this point
+	printf("deleting black node\n");
+	delete(n[10]); // delete 3 or 15
+	printTree();
+	return;
+}
+
+void rotateTest() {
+        int arr[100];
+        Node* n[100];
+        for (int i = 0; i < 100; i++)
+                n[i] = initNode(arr+i,1);
+	insert(n[4]);
+	insert(n[2]);
+	insert(n[6]);
+	insert(n[1]);
+	insert(n[3]);
+	insert(n[5]);
+	insert(n[7]);
+	printTree();
+	printf("rotation\n");
+	rotateLeft(n[4]);
+	printTree();
 	return;
 }
 
 int main() {
-
-	simpleDelete();
+	//insertTest();
+	//simpleDelete();
+	//deleteNephR();
+	deleteNephB();
+	//rotateTest();
 
 	return 0;
 }
