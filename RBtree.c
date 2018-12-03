@@ -78,6 +78,88 @@ void insert(Node* newNode) {
 	return;
 }
 
+// On an insertion to a RB tree, a rebalance is required
+// to maintain the balanced tree property.
+void rebalanceInsert(Node* node) {
+        // root check
+        if (node == root) {
+                return;
+        }
+        // child of root check
+        if (node->parent == root) {
+                return;
+        }
+        // black parent check
+        if (!isRed(node->parent)) {
+                return;
+        }
+
+        // family pointers
+        Node* parent = node->parent;
+        Node* gparent = parent->parent;
+        Node* uncle = NULL;
+        if (gparent != NULL){
+                if (gparent->left == parent)
+                        uncle = gparent->right;
+                else if (gparent->right == parent)
+                        uncle = gparent->left;
+        }
+	// recursive rebalance
+        // check uncle color
+        if (isRed(uncle)) {
+                // uncle is red!
+                parent->red = 0;
+                uncle->red = 0;
+                gparent->red = 1;
+                // recursive on grandparent
+                rebalanceInsert(gparent);
+        }
+        else {
+                // uncle is black
+                // FOUR CASES
+
+                // LEFT LEFT CASE
+                if (parent == gparent->left && node == parent->left) {
+                        rotateRight(gparent);
+                        // colors
+                        int red = gparent->red;
+                        gparent->red = parent->red;
+                        parent->red = red;
+                }
+                // LEFT RIGHT CASE
+                else if (parent == gparent->left && node == parent->right) {
+                        rotateLeft(parent);
+                        rotateRight(gparent);
+                        // colors
+                        int red = gparent->red;
+                        gparent->red = node->red;
+                        node->red = red;
+                }
+                // RIGHT RIGHT CASE
+                else if (parent == gparent->right && node == parent->right) {
+                        rotateLeft(gparent);
+                        // colors
+                        int red = gparent->red;
+                        gparent->red = parent->red;
+                        parent->red = red;
+                }
+                // RIGHT LEFT CASE
+                else {
+                        rotateRight(parent);
+                        rotateLeft(gparent);
+                        // colors
+                        int red = gparent->red;
+                        gparent->red = node->red;
+                        node->red = red;
+                }
+                rebalanceInsert(gparent);
+        }
+
+        root->red = 0;
+
+        return;
+}
+
 void delete(Node* node) {
 	// standard BST removal
 	// case 1: no children
@@ -351,88 +433,6 @@ int isRed(Node* node) {
 		return node->red;
 }
 
-// On an insertion to a RB tree, a rebalance is required
-// to maintain the balanced tree property.
-void rebalanceInsert(Node* node) {
-	// root check
-	if (node == root) {
-		return;
-	}
-	// child of root check
-	if (node->parent == root) {
-		return;
-	}
-	// black parent check
-	if (!isRed(node->parent)) {
-		return;
-	}
-
-	// family pointers
-	Node* parent = node->parent;
-	Node* gparent = parent->parent;
-	Node* uncle = NULL;
-	if (gparent != NULL){
-		if (gparent->left == parent)
-			uncle = gparent->right;
-		else if (gparent->right == parent)
-			uncle = gparent->left;
-	}
-	// recursive rebalance
-	// check uncle color
-	if (isRed(uncle)) {
-		// uncle is red!
-		parent->red = 0;
-		uncle->red = 0;
-		gparent->red = 1;
-		// recursive on grandparent
-		rebalanceInsert(gparent);
-	}
-	else {
-		// uncle is black
-		// FOUR CASES
-
-		// LEFT LEFT CASE
-		if (parent == gparent->left && node == parent->left) {
-			rotateRight(gparent);
-			// colors
-			int red = gparent->red;
-			gparent->red = parent->red;
-			parent->red = red;
-		}
-		// LEFT RIGHT CASE
-		else if (parent == gparent->left && node == parent->right) {
-			rotateLeft(parent);
-			rotateRight(gparent);
-			// colors
-			int red = gparent->red;
-			gparent->red = node->red;
-			node->red = red;
-		}
-		// RIGHT RIGHT CASE
-		else if (parent == gparent->right && node == parent->right) {
-			rotateLeft(gparent);
-			// colors
-			int red = gparent->red;
-			gparent->red = parent->red;
-			parent->red = red;
-		}
-		// RIGHT LEFT CASE
-		else {
-			rotateRight(parent);
-			rotateLeft(gparent);
-			// colors
-			int red = gparent->red;
-			gparent->red = node->red;
-			node->red = red;
-		}
-		rebalanceInsert(gparent);
-	}
-
-	root->red = 0;	
-
-	return;
-}
-
 // function to find a node in a tree, from it's address
 // returns the node on success
 // returns NULL on failure
@@ -461,8 +461,12 @@ void printTree() {
 void printTreeHelper(Node* node) {
 	if (node->left != NULL)
 		printTreeHelper(node->left);
-	printf("%p (%c)\n", node->addr, (node->red? 'r' : 'b'));
+	printf("%p (%c)", node->addr, (node->red? 'r' : 'b'));
+	if (node == root)
+		printf(" -root- ");
+	printf("\n");
 	if (node->right != NULL)
 		printTreeHelper(node->right);
 	return;
+
 }
