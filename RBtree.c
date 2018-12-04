@@ -340,7 +340,7 @@ void rebalanceDelete(Node* node) {
 		}
 	}
 	// if sib is black and both nephs are black
-	else if (!sib->red) {
+	else if (!isRed(sib)) {
 		// THIS CASE IS RECURSIVE: DOUBLE BLACK CAN PROPOGATE
 		doubleBlack(node, 1);
 	}
@@ -348,7 +348,7 @@ void rebalanceDelete(Node* node) {
 	else {
 		// LEFT
 		if (sib->parent->left == sib) {
-			rotateRight(sib);
+			rotateRight(parent);
 			int swp = sib->red;
 			sib->red = parent->red;
 			parent->red = swp;
@@ -356,7 +356,7 @@ void rebalanceDelete(Node* node) {
 		}
 		// RIGHT
 		else {
-			rotateLeft(sib);
+			rotateLeft(parent);
 			int swp = sib->red;
 			sib->red = parent->red;
 			parent->red = swp;
