@@ -77,48 +77,10 @@ void free537(void *ptr) {
 }
 
 void* realloc537(void *ptr, size_t size) {
-	//if ptr is null, call malloc
-	if (ptr == NULL){
-		malloc537(size);
-	}
-	
-	//if size is 0 and ptr is not null, follow free above
-	else if (ptr != NULL && size == 0){
-		free(ptr);
-	}
-	
-	//else, find tuple containing addr and remove it, then re-allocate
-	else{
-		Node* node = find(ptr);
-		if (node != NULL){
-			delete(node);
-			free(node);
-			void* addr = realloc(ptr, size);
-			node = initNode(addr, size);
-			isSpace(node);
-			coalesce(node);
-			insert(node);
-		}
-	}
-	
 	return NULL;
 }
 
-//checks to see if a memory location/size are within a range allocated by malloc and not free'd
 void memcheck537(void* ptr, size_t size) {
-	Node* node = find(ptr);
-	
-	//if find() returns a node that is not null and not freed, we're good!
-	if (node!= NULL && !node->freed){
-		return;
-	}	
-	
-	//if node returns NULL, we need to figure out if it is due to no existing node containing ptr, or if ptr is contained
-	//in node but doesn't match node->addr
-	else{
-			Node* root = getRoot();
-			i	
-	}
 	return;
 }
 
