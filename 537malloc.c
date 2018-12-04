@@ -8,7 +8,10 @@
 //
 /////////////////////////////////////////////////
 
-#include "537malloc.h";
+#include "537malloc.h"
+
+static void isSpace(Node* node);
+static void coalesce(Node* node);
 
 void* malloc537(size_t size) {
 	// size 0 case
@@ -30,7 +33,6 @@ void* malloc537(size_t size) {
 	}
 	else if (node->freed) {
 		node->freed = 0;
-		size_t oldsize = node->size;
 		node->size = size;
 		// check space
 	}
@@ -81,12 +83,10 @@ void* realloc537(void *ptr, size_t size) {
 	if (ptr == NULL){
 		malloc537(size);
 	}
-	
 	//if size is 0 and ptr is not null, follow free above
 	else if (ptr != NULL && size == 0){
 		free(ptr);
 	}
-	
 	//else, find tuple containing addr and remove it, then re-allocate
 	else{
 		Node* node = find(ptr);
@@ -95,9 +95,13 @@ void* realloc537(void *ptr, size_t size) {
 			free(node);
 			void* addr = realloc(ptr, size);
 			node = initNode(addr, size);
+			insert(node);
 			isSpace(node);
 			coalesce(node);
-			insert(node);
+		}
+		else{
+			printf("Error: realloc called on invalid memory\n");
+			exit(-1);
 		}
 	}
 	
@@ -105,18 +109,63 @@ void* realloc537(void *ptr, size_t size) {
 }
 
 void memcheck537(void* ptr, size_t size) {
+	if (ptr == NULL) {
+		printf("Error: memcheck537 called on null ptr\n");
+		exit(-1);
+	}
+	if (size < 0) {
+		printf("Error: memcheck537 called on negative size\n");
+		exit(-1);
+	}
+
 	Node* node = find(ptr);
 	
-	//if find() returns a node that is not null and not freed, we're good!
-	if (node!= NULL && !node->freed){
+	// if find() returns a node that is not null and not freed, we're good!
+	if (node != NULL && !node->freed) {
+		// check size to see if it fits
+		if (size > node->size) {
+			printf("Error: block pointed to by pointer is exceeded by size\n");
+			exit(-1);
+		}
 		return;
 	}	
-	
-	//if node returns NULL, we need to figure out if it is due to no existing node containing ptr, or if ptr is contained
-	//in node but doesn't match node->addr
-	else{
-			Node* root = getRoot();
-
+	// if find returns a node that is not null but it's freed, error
+	else if (node != NULL && node->freed) {
+		printf("Error: memcheck called on previously freed memory\n");
+		exit(-1);
+	}
+	// if node returns NULL, we need to figure out if it
+	// is due to no existing node containing ptr, or if ptr is contained
+	// in node but doesn't match node->addr
+	else {
+		// 200 IQ
+		node = initNode(ptr, 0);
+		insert(node);
+		Node* prev = findPrev(node);
+		delete(node);
+		// null check
+		if (prev == NULL) {
+			printf("Error: memcheck called on unallocated memory 1\n");
+			exit(-1);
+		}
+		// check if ptr is within range of prev block
+		if (prev->addr + prev->size > ptr) {
+			if (prev->freed) {
+				printf("Error: memcheck called on freed memory\n");
+				exit(-1);
+			}
+			// does prev fully contain addr+size?
+			else if (prev->addr + prev->size < ptr + size) {
+				printf("Error: memcheck ptr + size exceeds memory block\n");
+				exit(-1);
+			}
+			return;
+		}
+		else {
+			printf("Error: memcheck called on unallocated memory 2\n");
+			exit(-1);
+		}
+			
 	}
 	return;
 }

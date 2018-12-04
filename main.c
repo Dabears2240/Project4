@@ -170,10 +170,8 @@ int main() {
 	//deleteSibR(1); // R case
 	//rootTest();
 
-	char arr[100];
-	size_t i = (size_t)(arr + 10) - (size_t)(arr + 3);
-
-	printf("%i\n", i);
+	int* addr = malloc(sizeof(int));
+	addr = realloc((void*)addr + 1, 1);
 
 	return 0;
 }
