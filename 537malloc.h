@@ -8,8 +8,8 @@
 //
 /////////////////////////////////////////////////
 
-#ifndef 537MALLOC_H
-#define 537MALLOC_H
+#ifndef MALLOC537_H
+#define MALLOC537_H
 
 #include "RBtree.h"
 
