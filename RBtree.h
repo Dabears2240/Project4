@@ -27,6 +27,8 @@ void rebalanceInsert(Node* node);
 void rebalanceDelete(Node* node);
 void doubleBlack(Node* node, int casenum);
 Node* find(void* addr);
+Node* findNext(Node* node);
+Node* findPrev(Node* node);
 void printNode(Node* node);
 void printTree();
 void printTreeHelper(Node* node);

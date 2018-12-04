@@ -169,5 +169,11 @@ int main() {
 	//deleteSibR(0); // L case
 	//deleteSibR(1); // R case
 	//rootTest();
+
+	char arr[100];
+	size_t i = (size_t)(arr + 10) - (size_t)(arr + 3);
+
+	printf("%i\n", i);
+
 	return 0;
 }

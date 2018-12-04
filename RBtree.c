@@ -522,6 +522,103 @@ Node* find(void* addr) {
 	return NULL;
 }
 
+// for range queries, finds the arithmetic next node in the tree
+// returns the node next to the argument, or NULL if it's furthest right
+Node* findNext(Node* node) {
+	// null check
+	if (node == NULL) {
+		printf("findNext called on NULL node\n");
+		exit(-1);
+	}
+
+	Node* next;
+
+	// find that next node
+	// is there a right child?
+	if (node->right != NULL) {
+		// find the leftmost node of right subtree
+		next = node->right;
+		while (next->left != NULL)
+			next = next->left;
+		return next;
+	}
+	// if there is no right child
+	else {
+		// three cases here:
+		// - node is a left child
+		// - node is a right child
+		// - node is the root
+		Node* parent = node->parent;
+		// root case
+		if (parent == NULL) {
+			// root with no right child is the largest
+			return root;
+		}
+		// node is a left child
+		else if (parent->left == node) {
+			// next node is it's parent
+			return parent;
+		}
+		// node is a right child
+		else {
+			// opposite of the case where you find leftmost
+			// you're at the largest node of some subtree
+			// find the parent of that subtree, i.e. the
+			// node that points left to the top of it.
+			// If none found, return NULL because you're as
+			// far as you're gonna go, man
+			next = parent;
+			while (1) {
+				// no larger node exists
+				if (next->parent == NULL) {
+					return NULL;
+				}
+				// if next is a right node
+				if (next->parent->left == next)
+					return next->parent;
+				// try again
+				next = next->parent;
+			}
+		}
+	}
+
+	printf("The findNext code is not supposed to go here\n");
+	return NULL;
+}
+
+// finds the node directly before this node
+// same logic as findNext
+Node* findPrev(Node* node) {
+	if (node == NULL) {
+		printf("Error: findPrev called on NULL\n");
+		exit(-1);
+	}
+	Node* prev;
+	if (node->left != NULL) {
+		prev = node->left;
+		while (prev->right != NULL)
+			prev = prev->right;
+		return prev;
+	}
+	else {
+		Node* parent = node->parent;
+		if (parent == NULL)
+			return root;
+		else if (parent->right == node)
+			return parent;
+		else {
+			prev = parent;
+			while(1) {
+				if (prev->parent == NULL)
+					return NULL;
+				if (prev->parent->right == prev)
+					return prev->parent;
+				prev = prev->parent;
+			}
+		}
+	}
+}
+
 // prints the info of the node
 // 0xaddr (r/b lvl)
 void printNode(Node* node) {
